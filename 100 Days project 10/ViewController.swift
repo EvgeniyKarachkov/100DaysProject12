@@ -16,6 +16,13 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         super.viewDidLoad()
         
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewPerson))
+        
+        let defaults = UserDefaults.standard
+        
+        if let savedPeople = defaults.object(forKey: "people") as? Data {
+            if let decodedPeople = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(savedPeople) as? [Person] {
+                people = decodedPeople
+            }
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -62,7 +69,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
             let person = Person(name: "Unkwown", image: imageName)
             people.append(person)
             collectionView?.reloadData()
-    
+            save()
             dismiss(animated: true)
         }
     
@@ -75,13 +82,25 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         let person = people[indexPath.item]
         let ac = UIAlertController(title: "Rename person", message: nil, preferredStyle: .alert)
         ac.addTextField()
+        
+        
         ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         ac.addAction(UIAlertAction(title: "OK", style: .default) { [weak self, weak ac] _ in
             guard let newName = ac?.textFields?[0].text else { return }
             person.name = newName
+            self?.save()
             self?.collectionView?.reloadData()
         })
+        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(ac, animated: true)
     }
+    
+
+    func save() {
+        if let savedData = try? NSKeyedArchiver.archivedData(withRootObject: people, requiringSecureCoding: false) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "people")
+        }
+        
 }
 
